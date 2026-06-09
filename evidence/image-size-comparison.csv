@@ -1,0 +1,5 @@
+Repository,Tag,Size
+nginx,alpine,62.3MB
+nginx,latest,161MB
+cloud-app,alpine,62.3MB
+cloud-app,standard,161MB

@@ -1,0 +1,18 @@
+Unable to find image 'ghcr.io/whatokk/cloud-app:v2.0' locally
+v2.0: Pulling from whatokk/cloud-app
+8211d5969d2e: Already exists
+830625e1ac85: Already exists
+5431d0092ffd: Already exists
+b4a248c845e5: Already exists
+7f8b1a2b17d8: Already exists
+45381ecb0e2f: Already exists
+13fd728be9eb: Already exists
+e1304fd3590d: Pulling fs layer
+e1304fd3590d: Verifying Checksum
+e1304fd3590d: Download complete
+e1304fd3590d: Pull complete
+Digest: sha256:b3b53b2259f8946d3dbc22644cce43ca92a7ff5718797143001dc9d9a19eafb9
+Status: Downloaded newer image for ghcr.io/whatokk/cloud-app:v2.0
+docker: Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint cloud-v2-conflict (5485eba339750522444d0acdbae48ed006dbfa31d52146accbb9dcb2ce4bca0b): Bind for 0.0.0.0:8888 failed: port is already allocated
+
+Run 'docker run --help' for more information
