@@ -1,0 +1,81 @@
+name: Cloud Image Registry Lab
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  cloud-image-registry:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE: ghcr.io/${{ github.repository_owner }}/cloud-app
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Secure authentication to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.repository_owner }}" --password-stdin
+
+      - name: Build, tag, and push v1.0
+        run: |
+          docker build -t cloud-lab-image:v1 -f Dockerfile versions/v1
+          docker tag cloud-lab-image:v1 "$IMAGE:v1.0"
+          docker push "$IMAGE:v1.0"
+
+      - name: Build, tag, and push v2.0
+        run: |
+          docker build -t cloud-lab-image:v2 -f Dockerfile versions/v2
+          docker tag cloud-lab-image:v2 "$IMAGE:v2.0"
+          docker push "$IMAGE:v2.0"
+
+      - name: Disaster recovery pull test
+        run: |
+          docker system prune -a -f
+          docker run -d --name cloud-v1 -p 8888:80 "$IMAGE:v1.0"
+          sleep 5
+          curl -fsS http://127.0.0.1:8888 | tee disaster-recovery-v1.html
+
+      - name: Reproduce and solve port conflict
+        run: |
+          set +e
+          docker run -d --name cloud-v2-conflict -p 8888:80 "$IMAGE:v2.0" 2> port-conflict.txt
+          conflict_status=$?
+          set -e
+          cat port-conflict.txt
+          if [ "$conflict_status" -eq 0 ]; then
+            echo "Expected a port conflict, but the second container started unexpectedly."
+            exit 1
+          fi
+          docker rm -f cloud-v1
+          docker run -d --name cloud-v2 -p 8889:80 "$IMAGE:v2.0"
+          sleep 5
+          curl -fsS http://127.0.0.1:8889 | tee port-conflict-solved-v2.html
+
+      - name: Compare standard and Alpine image sizes
+        run: |
+          docker pull nginx:latest
+          docker pull nginx:alpine
+          docker build -t cloud-app:standard -f Dockerfile versions/v2
+          docker build -t cloud-app:alpine -f Dockerfile.alpine versions/v2
+          {
+            echo "Repository,Tag,Size"
+            docker images --format "{{.Repository}},{{.Tag}},{{.Size}}" nginx
+            docker images --format "{{.Repository}},{{.Tag}},{{.Size}}" cloud-app
+          } | tee image-size-comparison.csv
+
+      - name: Upload experiment evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloud-image-lab-evidence
+          path: |
+            disaster-recovery-v1.html
+            port-conflict.txt
+            port-conflict-solved-v2.html
+            image-size-comparison.csv
